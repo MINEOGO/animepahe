@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { EpisodeResult, FetchedEpisodes, FetchedEpisodesDlinks, SearchItem } from 'fetch/requests'
-import { BreadcrumbItem, Breadcrumbs, Chip, Link, Pagination, Spinner } from '@nextui-org/react'
+import { BreadcrumbItem, Breadcrumbs, Chip, Link, Pagination, Spinner, Button, useDisclosure } from '@nextui-org/react'
 import SearchBar from './components/SearchBar'
 import SearchResultItem from './components/SearchResultItem'
 import Episode from './components/Episode'
 import useAxios from './hooks/useAxios'
 import { ANIME } from './config/config'
+import BatchModal from './components/BatchModal' // Import the modal
+import { Layers } from 'lucide-react' // Import icon
 
 const fetched_eps: FetchedEpisodes = {}
 const fetched_eps_dlinks: FetchedEpisodesDlinks = {}
@@ -18,6 +20,9 @@ const App = () => {
 
   const [curPagination, setPagination] = useState(0)
   const [SelctedAnime, setSelectedAnime] = useState('')
+
+  // Modal State for Bulk Download
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   const setBreadcrumbs = (title: string) => {
     setSelectedAnime(title);
@@ -93,9 +98,20 @@ const App = () => {
             }
           </div> :
           <div>
-            <div className='flex justify-center mt-4'>
+            {/* Pagination and Bulk Download Button Area */}
+            <div className='flex justify-center items-center mt-4 gap-4'>
               <Pagination showControls onChange={onPaginationChange} total={curPagination} initialPage={1} />
+              
+              <Button 
+                color="secondary" 
+                variant="shadow"
+                onPress={onOpen}
+                endContent={<Layers size={18}/>}
+              >
+                Bulk Download
+              </Button>
             </div>
+
             <div className='flex flex-wrap justify-center'>
               {
                 isLoading ? <div className='flex h-96 justify-center items-center'><Spinner size='lg'/></div> : Episodes.map(({ episode, session, snapshot }) => {
@@ -104,6 +120,15 @@ const App = () => {
                 })
               }
             </div>
+
+            {/* Batch Download Modal */}
+            <BatchModal 
+                isOpen={isOpen} 
+                onOpenChange={onOpenChange} 
+                session={SelectedSeriesID} 
+                title={SelctedAnime} 
+                totalPages={curPagination} 
+            />
           </div>
       }
     </div>
