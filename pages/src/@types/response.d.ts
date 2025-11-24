@@ -40,11 +40,11 @@ declare module 'fetch/requests' {
         "name": string
     }[]
 
+    // Updated to match your new Worker response
     interface DirectLink {
-        "status": boolean,
-        "content": {
-            "url": string
-        }
+        "success": boolean,
+        "url": string,
+        "error"?: string
     }
 
     interface FetchedEpisodes {
