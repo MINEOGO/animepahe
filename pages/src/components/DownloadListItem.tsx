@@ -3,6 +3,7 @@ import { Download, Zap } from 'lucide-react';
 import useAxios from '../hooks/useAxios';
 import { KWIK } from '../config/config';
 import { DirectLink } from 'fetch/requests';
+import toast from 'react-hot-toast';
 
 interface DownloadListItemProps {
   name: string,
@@ -13,18 +14,17 @@ const DownloadListItem = ({ name, link }: DownloadListItemProps) => {
   const { isLoading, request } = useAxios()
 
   const onDirectDlRequest = async (kwik: string) => {
+    // New API expects: /?url=https://kwik.cx/e/...
     const response = await request<DirectLink>({
       server: KWIK,
-      endpoint: '/',
-      method: 'POST',
-      data: {
-        "service": "kwik",
-        "action": "fetch",
-        "content": { kwik }
-      }
+      endpoint: `/?url=${encodeURIComponent(kwik)}`,
+      method: 'GET'
     })
-    if (response) {
-      window.open(response.content.url, '_blank', 'noopener,noreferrer');
+    
+    if (response && response.success) {
+      window.open(response.url, '_blank', 'noopener,noreferrer');
+    } else {
+      toast.error("Failed to bypass Kwik link");
     }
   }
 
