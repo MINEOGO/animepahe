@@ -1,3 +1,1 @@
-# Animepahe
-Animepahe Downloader using Cloudflare Workers &amp; Pages
-[Visit](https://animepahe.pages.dev/).
+# a modified version that's better than the actual repo lolll
