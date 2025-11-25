@@ -63,8 +63,10 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
                             });
 
                             if (bypassData && bypassData.success) {
-                                // Wrap in Proxy to force download
-                                const filename = `${title} - ${ep.episode}.mp4`;
+                                // Custom Filename Construction
+                                const safeTitle = title.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+                                const filename = `${safeTitle}_${ep.episode}_animepahe-26e.pages.dev_.mp4`;
+                                
                                 finalUrl = `${ANIME}/proxy?proxyUrl=${encodeURIComponent(bypassData.url)}&modify&download&filename=${encodeURIComponent(filename)}`;
                             } else {
                                 finalUrl = `${finalUrl} (Bypass Failed)`;
@@ -123,10 +125,8 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
         links.forEach(l => {
             const url = l.split(': ')[1];
             if (!url.includes("Failed")) {
-                // Stagger downloads to prevent browser blocking
                 setTimeout(() => {
                     if (instantMode) {
-                        // Iframe trick for instant downloads
                         const iframe = document.createElement('iframe');
                         iframe.style.display = 'none';
                         iframe.src = url;
@@ -136,7 +136,7 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
                         window.open(url, '_blank');
                     }
                 }, delay);
-                delay += 1500; // 1.5s delay between downloads
+                delay += 1500;
             }
         });
         toast.success("Downloads started!");
@@ -158,7 +158,7 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
                                         <div className="flex justify-between items-center mb-2">
                                             <div className="flex flex-col">
                                                 <span className="text-small font-bold">Instant Mode (Proxy)</span>
-                                                <span className="text-tiny text-default-500">Convert to Direct Download Links (Slower generation, instant download)</span>
+                                                <span className="text-tiny text-default-500">Convert to Direct Download Links</span>
                                             </div>
                                             <Switch 
                                                 isSelected={instantMode} 
@@ -208,7 +208,7 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
                                     className="w-full text-white"
                                     startContent={instantMode ? <Zap size={18}/> : <Copy size={18}/>}
                                 >
-                                    {instantMode ? "Generate Direct Links" : "Fetch Kwik Links"}
+                                    {instantMode ? "Generate" : "Fetch Links"}
                                 </Button>
                             )}
                             {isDone && (
