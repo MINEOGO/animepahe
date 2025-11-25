@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardBody, Image, Divider, Chip, Spinner, Button, useDisclosure } from '@nextui-org/react'
-import { useState } from 'react' // <--- THIS WAS MISSING
+import { useState } from 'react'
 import { Prox } from '../utils/ImgProxy'
 import useAxios from '../hooks/useAxios'
 import { ANIME } from '../config/config'
@@ -41,8 +41,9 @@ const SearchResultItem = ({
         endpoint: `/?method=series&session=${session}&page=${page}`,
         method: 'GET'
       })
-      if (response) {
-        // Update local state for the modal
+      
+      // Fix: Check if response AND response.episodes exist
+      if (response && response.episodes) {
         setTotalPages(response.total_pages); 
         
         onSeriesUpdate(response.episodes, title, session, response.total_pages)
@@ -53,23 +54,21 @@ const SearchResultItem = ({
       }
       return
     }
-    // If cached, we still need to know total pages for the modal
+    
     setTotalPages(fetched_eps[session]['total_page']);
     onSeriesUpdate(fetched_eps[session][page], title, session, fetched_eps[session]['total_page'])
   }
 
-  // Separate handler for opening the batch modal to ensure we have page count
   const handleBatchClick = async (e: any) => {
-    e.stopPropagation(); // Prevent clicking the card itself
+    e.stopPropagation(); 
     
-    // We need to fetch page 1 just to get the 'total_pages' count if we don't have it yet
     if (totalPages === 0) {
         const response = await request<EpisodeResult>({
             server: ANIME,
             endpoint: `/?method=series&session=${session}&page=1`,
             method: 'GET'
         });
-        if (response) {
+        if (response && response.total_pages) {
             setTotalPages(response.total_pages);
             onOpen();
         }
@@ -85,7 +84,6 @@ const SearchResultItem = ({
             <div className='flex flex-col gap-y-2 my-2 w-full'>
             <div className="flex justify-between items-center">
                 <span className="text-default-500">{episodes} Episodes</span>
-                {/* Bulk Button */}
                 <Button 
                     isIconOnly 
                     size="sm" 
@@ -121,7 +119,6 @@ const SearchResultItem = ({
         </CardBody>
         </Card>
         
-        {/* Render Modal */}
         <BatchModal 
             isOpen={isOpen} 
             onOpenChange={onOpenChange} 
