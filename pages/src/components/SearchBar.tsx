@@ -23,14 +23,10 @@ const SearchBar = ({ setSearchResult, setHomeActive }: SearchBarProps) => {
       method: 'GET'
     })
     
-    // Fix: Ensure response.data exists before setting state to prevent blank page map errors
     if (response && response.data) {
       setSearchResult(response.data)
       setHomeActive(true)
-      // Reset history state when performing a new search
-      window.history.replaceState({ view: 'home' }, '');
     } else {
-      // Optional: Clear results if nothing found
       setSearchResult([]); 
     }
   }
@@ -43,19 +39,25 @@ const SearchBar = ({ setSearchResult, setHomeActive }: SearchBarProps) => {
         fullWidth
         onChange={({ target: { value } }) => setQueryString(value)}
         value={QueryString}
-        className='w-full max-w-sm'
         classNames={{
           input: [
-            "text-center font-medium text-gray-600",
-          ]
+            "text-center font-medium text-white placeholder:text-white/50",
+          ],
+          inputWrapper: [
+            "bg-white/10",
+            "backdrop-blur-md",
+            "hover:bg-white/20",
+            "group-data-[focus=true]:bg-white/20",
+            "!cursor-text",
+            "border-white/20 border",
+            "shadow-inner"
+          ],
         }}
         spellCheck={false}
         type="text"
-        color='primary'
-        variant='bordered'
-        placeholder="Search Anime"
+        placeholder="Search Anime..."
         endContent={
-          isLoading ? <LoaderCircle className='animate-spin' /> : <Command className='text-default' />
+          isLoading ? <LoaderCircle className='animate-spin text-white' /> : <Command className='text-white/70' />
         }
       />
     </div>

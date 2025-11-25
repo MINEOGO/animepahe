@@ -1,133 +1,60 @@
-import { Card, CardHeader, CardBody, Image, Divider, Chip, Spinner, Button, useDisclosure } from '@nextui-org/react'
-import { useState } from 'react'
-import { Prox } from '../utils/ImgProxy'
-import useAxios from '../hooks/useAxios'
-import { ANIME } from '../config/config'
-import { EpisodeResult, FetchedEpisodes } from 'fetch/requests'
-import { Layers } from 'lucide-react' 
-import BatchModal from './BatchModal' 
+import { Card, CardHeader, CardBody, Image, Divider, Chip } from '@nextui-org/react';
+import { useNavigate } from 'react-router-dom';
+import { Prox } from '../utils/ImgProxy';
+import { SearchItem } from 'fetch/requests';
 
 interface SearchResultItemProps {
-  title: string,
-  episodes: number,
-  poster: string,
-  status: string,
-  type: string,
-  year: number,
-  session: string,
-  score: number | null,
-  fetched_eps: FetchedEpisodes,
-  onSeriesUpdate: (
-    episodes: EpisodeResult['episodes'],
-    breadcrumbs: string,
-    session: string,
-    pagination: number
-  ) => void
+  data: SearchItem;
 }
 
-const SearchResultItem = ({ 
-  session, title, episodes, poster, status, type, year, score, fetched_eps, onSeriesUpdate
-}: SearchResultItemProps) => {
-  const { isLoading, request } = useAxios()
-  
-  // Modal State
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
-  const [totalPages, setTotalPages] = useState(0); 
+const SearchResultItem = ({ data }: SearchResultItemProps) => {
+  const navigate = useNavigate();
+  const { title, episodes, poster, status, type, year, score, session } = data;
 
-  const FetchEpisodes = async (page: number) => {
-    if (fetched_eps[session] === undefined) {
-      const response = await request<EpisodeResult>({
-        server: ANIME,
-        endpoint: `/?method=series&session=${session}&page=${page}`,
-        method: 'GET'
-      })
-      
-      // Fix: Check if response AND response.episodes exist
-      if (response && response.episodes) {
-        setTotalPages(response.total_pages); 
-        
-        onSeriesUpdate(response.episodes, title, session, response.total_pages)
-        fetched_eps[session] = {
-          total_page: response.total_pages,
-          [page] : response.episodes
-        }
-      }
-      return
-    }
-    
-    setTotalPages(fetched_eps[session]['total_page']);
-    onSeriesUpdate(fetched_eps[session][page], title, session, fetched_eps[session]['total_page'])
-  }
-
-  const handleBatchClick = async (e: any) => {
-    e.stopPropagation(); 
-    
-    if (totalPages === 0) {
-        const response = await request<EpisodeResult>({
-            server: ANIME,
-            endpoint: `/?method=series&session=${session}&page=1`,
-            method: 'GET'
-        });
-        if (response && response.total_pages) {
-            setTotalPages(response.total_pages);
-            onOpen();
-        }
-    } else {
-        onOpen();
-    }
-  }
+  const handlePress = () => {
+    // Navigate to /anime/session-id and pass current data so we don't have to refetch title/poster immediately
+    navigate(`/anime/${session}`, { state: { title, poster, ...data } });
+  };
 
   return (
-    <>
-        <Card isPressable disableRipple onPress={() => FetchEpisodes(1)} className="m-4 w-72 cursor-pointer hover:border-primary border-1 group">
-        <CardHeader className="pb-0 pt-2 px-4 flex-col text-left items-start h-32 overflow-hidden">
-            <div className='flex flex-col gap-y-2 my-2 w-full'>
-            <div className="flex justify-between items-center">
-                <span className="text-default-500">{episodes} Episodes</span>
-                <Button 
-                    isIconOnly 
-                    size="sm" 
-                    color="secondary" 
-                    variant="flat" 
-                    onPress={handleBatchClick}
-                    isDisabled={isLoading}
-                >
-                    <Layers size={16} />
-                </Button>
-            </div>
-            <p className="text-tiny uppercase font-bold">{status}</p>
-            </div>
-            <Divider />
-            <h4 className="font-bold text-large line-clamp-2">{title}</h4>
-        </CardHeader>
-        <CardBody className="relative overflow-hidden items-center py-4 gap-y-2 flex flex-col justify-center">
-            <Image
-            isBlurred
-            alt="background"
-            className="object-cover rounded-xl h-[350px]"
-            src={Prox(poster)}
-            width={240}
-            />
-            <div className='flex gap-x-2 mt-4'>
-            <Chip variant='shadow' radius='sm' color='primary'>{type}</Chip>
-            <Chip variant='shadow' radius='sm' color='secondary'>{year}</Chip>
-            {score && <Chip className='text-white' variant='shadow' radius='sm' color='success'>Score {score}</Chip>}
-            </div>
-            {
-            isLoading && <Spinner className='absolute z-10 top-36' size='lg' />
-            }
-        </CardBody>
-        </Card>
+    <Card 
+        isPressable 
+        onPress={handlePress} 
+        className="m-2 w-72 h-[500px] glass-panel hover:scale-105 transition-transform duration-200 bg-transparent border-none"
+    >
+      <CardBody className="p-0 overflow-hidden relative group">
+        {/* Background Image with blur for filling space */}
+        <div 
+            className="absolute inset-0 bg-cover bg-center blur-xl opacity-50" 
+            style={{ backgroundImage: `url(${Prox(poster)})` }}
+        ></div>
         
-        <BatchModal 
-            isOpen={isOpen} 
-            onOpenChange={onOpenChange} 
-            session={session} 
-            title={title} 
-            totalPages={totalPages} 
+        <Image
+          removeWrapper
+          alt={title}
+          className="z-10 w-full h-full object-cover"
+          src={Prox(poster)}
         />
-    </>
-  )
+        
+        {/* Overlay Info on Hover */}
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 flex flex-col justify-center items-center gap-2 p-4 text-white">
+             <Chip size="sm" color="primary">{type}</Chip>
+             <Chip size="sm" color="secondary">{year}</Chip>
+             {score && <Chip size="sm" color="success">Score: {score}</Chip>}
+        </div>
+      </CardBody>
+      
+      <CardHeader className="pb-4 pt-4 px-4 flex-col text-left items-start h-auto bg-black/40 backdrop-blur-md border-t border-white/10">
+        <div className='flex justify-between w-full items-center mb-2'>
+          <span className="text-white/70 text-xs font-bold">{episodes} EPS</span>
+          <span className={`text-xs font-bold uppercase px-2 py-1 rounded-md ${status === 'Finished' ? 'bg-green-500/30 text-green-300' : 'bg-blue-500/30 text-blue-300'}`}>
+            {status}
+          </span>
+        </div>
+        <h4 className="font-bold text-lg text-white line-clamp-2 leading-tight text-shadow">{title}</h4>
+      </CardHeader>
+    </Card>
+  );
 }
 
-export default SearchResultItem
+export default SearchResultItem;
