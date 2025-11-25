@@ -22,9 +22,16 @@ const SearchBar = ({ setSearchResult, setHomeActive }: SearchBarProps) => {
       endpoint: `/?method=search&query=${QueryString}`,
       method: 'GET'
     })
-    if (response) {
+    
+    // Fix: Ensure response.data exists before setting state to prevent blank page map errors
+    if (response && response.data) {
       setSearchResult(response.data)
       setHomeActive(true)
+      // Reset history state when performing a new search
+      window.history.replaceState({ view: 'home' }, '');
+    } else {
+      // Optional: Clear results if nothing found
+      setSearchResult([]); 
     }
   }
 
