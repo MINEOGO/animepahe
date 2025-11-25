@@ -2,20 +2,23 @@ import { Routes, Route } from 'react-router-dom';
 import { Chip, Link } from '@nextui-org/react';
 import Home from './pages/Home';
 import Details from './pages/Details';
+import RainBackground from './components/RainBackground';
 
 const App = () => {
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen p-4 relative">
+      <RainBackground />
+      
       {/* Header / Notification */}
-      <div className='flex justify-center mb-8'>
+      <div className='flex justify-center mb-8 relative z-10'>
         <Chip
-          className="glass-panel text-white font-bold"
-          variant="flat"
+          className="glass-panel text-white font-bold border-white/20"
+          variant="bordered"
           size='lg'
         >
           Join our Discord Server! 
           <Link 
-            className="ml-2 text-yellow-300" 
+            className="ml-2 text-cyan-300 font-bold" 
             underline="hover" 
             isExternal 
             showAnchorIcon 
@@ -29,7 +32,6 @@ const App = () => {
       {/* Routes */}
       <Routes>
         <Route path="/" element={<Home />} />
-        {/* Dynamic Route for Anime Sessions */}
         <Route path="/anime/:session" element={<Details />} />
       </Routes>
     </div>
