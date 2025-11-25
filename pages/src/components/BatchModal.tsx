@@ -21,7 +21,7 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
     const [status, setStatus] = useState("");
     const [links, setLinks] = useState<string[]>([]);
     const [isDone, setIsDone] = useState(false);
-    const [instantMode, setInstantMode] = useState(false); // Toggle state
+    const [instantMode, setInstantMode] = useState(false);
 
     const fetchAllLinks = async () => {
         setLoading(true);
@@ -34,7 +34,6 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
                 setStatus(`Processing Page ${page}/${totalPages}...`);
                 setProgress(((page - 1) / totalPages) * 100);
 
-                // 1. Get Episodes
                 const epData = await request<EpisodeResult>({
                     server: ANIME,
                     endpoint: `/?method=series&session=${session}&page=${page}`,
@@ -43,12 +42,8 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
 
                 if (!epData || !epData.episodes) continue;
 
-                // 2. Process Episodes
-                // We use a for...of loop here if instantMode is on to prevent overwhelming the worker
-                // otherwise Promise.all is fine for just getting Kwik links
-                
                 if (instantMode) {
-                    // Sequential processing for Instant Mode to respect rate limits/reliability
+                    // Sequential processing for Instant Mode
                     for (const ep of epData.episodes) {
                          const linkData = await request<DownloadLinks>({
                             server: ANIME,
@@ -60,7 +55,6 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
                             let targetLink = linkData.find(l => l.name.includes("1080")) || linkData[linkData.length - 1];
                             let finalUrl = targetLink.link;
 
-                            // BYPASS LOGIC
                             setStatus(`Bypassing ${ep.episode}...`);
                             const bypassData = await request<DirectLink>({
                                 server: KWIK,
@@ -69,7 +63,9 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
                             });
 
                             if (bypassData && bypassData.success) {
-                                finalUrl = bypassData.url;
+                                // Wrap in Proxy to force download
+                                const filename = `${title} - ${ep.episode}.mp4`;
+                                finalUrl = `${ANIME}/proxy?proxyUrl=${encodeURIComponent(bypassData.url)}&modify&download&filename=${encodeURIComponent(filename)}`;
                             } else {
                                 finalUrl = `${finalUrl} (Bypass Failed)`;
                             }
@@ -78,7 +74,7 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
                         }
                     }
                 } else {
-                    // Standard Parallel Fetch (Fast)
+                    // Parallel processing for normal mode
                     const episodePromises = epData.episodes.map(async (ep) => {
                         const linkData = await request<DownloadLinks>({
                             server: ANIME,
@@ -115,19 +111,35 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
     const copyToClipboard = () => {
         const urlList = links.map(l => l.split(': ')[1]).join('\n');
         navigator.clipboard.writeText(urlList);
-        toast.success("Copied all links to clipboard!");
+        toast.success("Copied all links!");
     };
 
-    const openAllTabs = () => {
-        if (links.length > 10) {
-            if(!confirm(`You are about to open ${links.length} tabs. This might crash your browser. Continue?`)) return;
+    const downloadAll = () => {
+        if (links.length > 10 && !instantMode) {
+            if(!confirm(`This will open ${links.length} tabs/downloads. Continue?`)) return;
         }
+
+        let delay = 0;
         links.forEach(l => {
             const url = l.split(': ')[1];
             if (!url.includes("Failed")) {
-                window.open(url, '_blank');
+                // Stagger downloads to prevent browser blocking
+                setTimeout(() => {
+                    if (instantMode) {
+                        // Iframe trick for instant downloads
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.src = url;
+                        document.body.appendChild(iframe);
+                        setTimeout(() => document.body.removeChild(iframe), 60000);
+                    } else {
+                        window.open(url, '_blank');
+                    }
+                }, delay);
+                delay += 1500; // 1.5s delay between downloads
             }
         });
+        toast.success("Downloads started!");
     };
 
     return (
@@ -145,27 +157,18 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
                                     <div className="bg-default-100 p-4 rounded-lg">
                                         <div className="flex justify-between items-center mb-2">
                                             <div className="flex flex-col">
-                                                <span className="text-small font-bold">Instant Mode</span>
-                                                <span className="text-tiny text-default-500">Automatically convert Kwik links to Direct MP4 links</span>
+                                                <span className="text-small font-bold">Instant Mode (Proxy)</span>
+                                                <span className="text-tiny text-default-500">Convert to Direct Download Links (Slower generation, instant download)</span>
                                             </div>
                                             <Switch 
                                                 isSelected={instantMode} 
                                                 onValueChange={setInstantMode}
                                                 color="warning"
                                                 thumbIcon={({ isSelected, className }) =>
-                                                    isSelected ? (
-                                                        <Zap className={className} />
-                                                    ) : (
-                                                        <ExternalLink className={className} />
-                                                    )
+                                                    isSelected ? <Zap className={className} /> : <ExternalLink className={className} />
                                                 }
                                             />
                                         </div>
-                                        {instantMode && (
-                                            <p className="text-tiny text-warning">
-                                                Note: Instant mode is slower because it processes episodes sequentially to bypass protection.
-                                            </p>
-                                        )}
                                     </div>
                                 </div>
                             )}
@@ -188,7 +191,6 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
                                 <div className="mt-4">
                                     <Textarea
                                         label="Generated Links"
-                                        placeholder="Links will appear here..."
                                         value={links.join('\n')}
                                         readOnly
                                         minRows={10}
@@ -206,7 +208,7 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
                                     className="w-full text-white"
                                     startContent={instantMode ? <Zap size={18}/> : <Copy size={18}/>}
                                 >
-                                    {instantMode ? "Start Instant Batch" : "Fetch Kwik Links"}
+                                    {instantMode ? "Generate Direct Links" : "Fetch Kwik Links"}
                                 </Button>
                             )}
                             {isDone && (
@@ -214,7 +216,7 @@ const BatchModal = ({ isOpen, onOpenChange, session, title, totalPages }: BatchM
                                     <Button color="secondary" variant="flat" onPress={copyToClipboard} startContent={<Copy size={18}/>} className="flex-1">
                                         Copy Links
                                     </Button>
-                                    <Button color="primary" variant="flat" onPress={openAllTabs} startContent={<ExternalLink size={18}/>} className="flex-1">
+                                    <Button color="primary" variant="flat" onPress={downloadAll} startContent={<ExternalLink size={18}/>} className="flex-1">
                                         Download All
                                     </Button>
                                 </div>
