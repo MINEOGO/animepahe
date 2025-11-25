@@ -12,7 +12,7 @@ const SearchResultItem = ({ data }: SearchResultItemProps) => {
   const { title, episodes, poster, status, type, year, score, session } = data;
 
   const handlePress = () => {
-    // Fixed: data already contains title and poster, no need to spread them separately
+    // Pass data cleanly to avoid TypeScript property duplication errors
     navigate(`/anime/${session}`, { state: data });
   };
 
