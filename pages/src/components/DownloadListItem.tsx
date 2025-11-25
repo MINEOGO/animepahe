@@ -7,14 +7,16 @@ import toast from 'react-hot-toast';
 
 interface DownloadListItemProps {
   name: string,
-  link: string
+  link: string,
+  seriesTitle: string,
+  episodeNumber: string
 }
 
-const DownloadListItem = ({ name, link }: DownloadListItemProps) => {
+const DownloadListItem = ({ name, link, seriesTitle, episodeNumber }: DownloadListItemProps) => {
   const { isLoading, request } = useAxios()
 
   const onDownload = async (kwikUrl: string) => {
-    // 1. Bypass Kwik to get the Direct MP4 URL
+    // 1. Bypass Kwik
     const response = await request<DirectLink>({
       server: KWIK,
       endpoint: `/?url=${encodeURIComponent(kwikUrl)}`,
@@ -22,19 +24,22 @@ const DownloadListItem = ({ name, link }: DownloadListItemProps) => {
     })
     
     if (response && response.success) {
-      // 2. Route through OUR proxy with &download flag
-      const proxyDownloadUrl = `${ANIME}/proxy?proxyUrl=${encodeURIComponent(response.url)}&modify&download&filename=${encodeURIComponent(name)}.mp4`;
+      // 2. Construct Custom Filename
+      // Format: Title_Ep_animepahe-26e.pages.dev_.mp4
+      const safeTitle = seriesTitle.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+      const fileName = `${safeTitle}_${episodeNumber}_animepahe-26e.pages.dev_.mp4`;
+
+      // 3. Proxy Download
+      const proxyDownloadUrl = `${ANIME}/proxy?proxyUrl=${encodeURIComponent(response.url)}&modify&download&filename=${encodeURIComponent(fileName)}`;
       
-      // Trigger download using a temporary hidden iframe
       const iframe = document.createElement('iframe');
       iframe.style.display = 'none';
       iframe.src = proxyDownloadUrl;
       document.body.appendChild(iframe);
       
-      // Cleanup iframe after a delay
       setTimeout(() => document.body.removeChild(iframe), 60000);
       
-      toast.success("Download started!");
+      toast.success(`Downloading: ${fileName}`);
     } else {
       toast.error("Failed to bypass Kwik link");
     }
