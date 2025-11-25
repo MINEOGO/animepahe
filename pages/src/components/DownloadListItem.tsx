@@ -1,5 +1,5 @@
-import { Button, Spinner } from "@nextui-org/react";
-import { Download, Zap } from 'lucide-react';
+import { Button } from "@nextui-org/react";
+import { Download } from 'lucide-react';
 import useAxios from '../hooks/useAxios';
 import { KWIK, ANIME } from '../config/config';
 import { DirectLink } from 'fetch/requests';
@@ -23,10 +23,9 @@ const DownloadListItem = ({ name, link }: DownloadListItemProps) => {
     
     if (response && response.success) {
       // 2. Route through OUR proxy with &download flag
-      // This prevents the tab from opening/redirecting and starts the download
       const proxyDownloadUrl = `${ANIME}/proxy?proxyUrl=${encodeURIComponent(response.url)}&modify&download&filename=${encodeURIComponent(name)}.mp4`;
       
-      // Trigger download using a temporary hidden iframe to avoid navigation
+      // Trigger download using a temporary hidden iframe
       const iframe = document.createElement('iframe');
       iframe.style.display = 'none';
       iframe.src = proxyDownloadUrl;
