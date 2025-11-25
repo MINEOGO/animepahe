@@ -57,7 +57,14 @@ const Episode = ({ episode, session, snapshot, series, seriesname, linkCache }: 
           { isLoading ? <Spinner color='default' size='sm'/> : 'EP ' + episode }
         </Button>
       </CardFooter>
-      <DownloadModel epName={`${seriesname} : EP ${episode}`} isOpen={isOpen} links={dlinks} onOpenChange={onOpenChange}/>
+      <DownloadModel 
+        epName={`${seriesname} : EP ${episode}`} 
+        isOpen={isOpen} 
+        links={dlinks} 
+        onOpenChange={onOpenChange}
+        seriesTitle={seriesname}
+        episodeNumber={episode}
+      />
     </Card>
   );
 }
