@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardBody, Image, Divider, Chip } from '@nextui-org/react';
+import { Card, CardHeader, CardBody, Image, Chip } from '@nextui-org/react';
 import { useNavigate } from 'react-router-dom';
 import { Prox } from '../utils/ImgProxy';
 import { SearchItem } from 'fetch/requests';
@@ -12,8 +12,8 @@ const SearchResultItem = ({ data }: SearchResultItemProps) => {
   const { title, episodes, poster, status, type, year, score, session } = data;
 
   const handlePress = () => {
-    // Navigate to /anime/session-id and pass current data so we don't have to refetch title/poster immediately
-    navigate(`/anime/${session}`, { state: { title, poster, ...data } });
+    // Fixed: data already contains title and poster, no need to spread them separately
+    navigate(`/anime/${session}`, { state: data });
   };
 
   return (
