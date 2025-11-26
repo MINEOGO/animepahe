@@ -26,7 +26,7 @@ const Home = () => {
     });
 
     if (response && response.data) {
-      setTotalPages(response.last_page);
+      setTotalPages(response.last_page); // Set total pages (e.g., 500)
       
       const mappedData: SearchItem[] = response.data.map((item) => ({
           id: item.id,
