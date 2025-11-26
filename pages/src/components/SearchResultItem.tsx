@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardBody, Image, Chip } from '@nextui-org/react';
+import { Card, CardBody, Image, Chip } from '@nextui-org/react';
 import { useNavigate } from 'react-router-dom';
 import { Prox } from '../utils/ImgProxy';
 import { SearchItem } from 'fetch/requests';
