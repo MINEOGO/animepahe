@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Button, Spinner, Select, SelectItem } from '@nextui-org/react';
+import { Button, Spinner } from '@nextui-org/react';
 import { ArrowLeft, Settings } from 'lucide-react';
 import useAxios from '../hooks/useAxios';
 import { ANIME, KWIK } from '../config/config';
@@ -105,9 +105,6 @@ const Player = () => {
 
         setCurrentSrc(newUrl);
 
-        // Restore position after source change
-        // React updates the DOM, video tag reloads. 
-        // Use timeout to ensure DOM update
         setTimeout(() => {
             if (videoRef.current) {
                 videoRef.current.currentTime = currentTime;
