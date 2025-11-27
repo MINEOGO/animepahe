@@ -182,7 +182,8 @@ export class AnimePahe {
 			const data: { link: string, name: string }[] = []
 			let m;
 
-			const regex = /href="(?<link>https?:\/\/pahe[.]win\/[^"]+)"[^>]+>(?<name>[^<]+)/g
+            // Regex Updated to capture full content inside <a>
+			const regex = /href="(?<link>https?:\/\/pahe[.]win\/[^"]+)"[^>]*>(?<content>.*?)<\/a>/g
 			const KwixArray: Array<Promise<string | false>> = []
 
 			while ((m = regex.exec(raw.replace(/\n/g, '')) as RegExpExecArray) !== null) {
@@ -190,11 +191,24 @@ export class AnimePahe {
 					regex.lastIndex++;
 				}
 
-				KwixArray.push(this.Kwix((m.groups as Record<string, string>)['link']))
+                const link = (m.groups as Record<string, string>)['link'];
+                const content = (m.groups as Record<string, string>)['content'];
+
+				KwixArray.push(this.Kwix(link))
+
+                // Parse Name
+                // Remove &middot; and HTML tags for the main text
+                let cleanName = content.replace(/&middot;/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+                
+                // Extract Language badge if present
+                const langMatch = /<span[^>]*>(?<lang>[^<]+)<\/span>/.exec(content);
+                if (langMatch && langMatch.groups && langMatch.groups.lang) {
+                    cleanName += ` (${langMatch.groups.lang.trim()})`;
+                }
 
 				data.push({
 					link: '',
-					name: (m.groups as Record<string, string>)['name'].replace(/&middot;./g, '')
+					name: cleanName
 				})
 			}
 
@@ -221,7 +235,7 @@ export class AnimePahe {
 		})
 		return res
 	}
-	
+
     public static async airing(page: string, userAgent: string) {
         const res = await fetch(`https://animepahe.si/api?m=airing&page=${page || 1}`, {
             headers: AnimePahe.Headers(false, userAgent)
