@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button, Spinner } from '@nextui-org/react';
-import { ArrowLeft, Settings } from 'lucide-react';
+import { ArrowLeft, Settings, PictureInPicture } from 'lucide-react'; // Added Icon
 import useAxios from '../hooks/useAxios';
 import { ANIME, KWIK } from '../config/config';
 import { DownloadLinks, DirectLink } from 'fetch/requests';
@@ -18,7 +18,6 @@ const Player = () => {
     const location = useLocation();
     const videoRef = useRef<HTMLVideoElement>(null);
     
-    // State passed from previous screen (optional)
     const meta = location.state || {};
 
     const { request } = useAxios();
@@ -33,7 +32,6 @@ const Player = () => {
             setLoading(true);
 
             try {
-                // 1. Get Kwik Links
                 setStatusText('Fetching sources...');
                 const linkData = await request<DownloadLinks>({
                     server: ANIME,
@@ -47,7 +45,6 @@ const Player = () => {
                     return;
                 }
 
-                // 2. Resolve Direct Links (Parallel)
                 setStatusText('Bypassing protections...');
                 const resolvedSources: VideoSource[] = [];
 
@@ -59,10 +56,9 @@ const Player = () => {
                     });
 
                     if (bypass && bypass.success) {
-                        // Route through Proxy to handle headers/CORS
                         const proxyUrl = `${ANIME}/proxy?proxyUrl=${encodeURIComponent(bypass.url)}&modify`;
                         return {
-                            quality: item.name, // e.g., "1080p (eng)"
+                            quality: item.name,
                             url: proxyUrl
                         };
                     }
@@ -76,11 +72,9 @@ const Player = () => {
                 });
 
                 if (resolvedSources.length > 0) {
-                    // Sort by resolution (simple string sort works usually: 1080 > 720 > 360)
                     resolvedSources.sort((a, b) => b.quality.localeCompare(a.quality));
-                    
                     setSources(resolvedSources);
-                    setCurrentSrc(resolvedSources[0].url); // Default to highest
+                    setCurrentSrc(resolvedSources[0].url);
                 } else {
                     toast.error("Failed to resolve video streams.");
                 }
@@ -111,6 +105,19 @@ const Player = () => {
                 if (!isPaused) videoRef.current.play();
             }
         }, 100);
+    };
+
+    const togglePiP = async () => {
+        try {
+            if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture();
+            } else if (videoRef.current) {
+                await videoRef.current.requestPictureInPicture();
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("PiP mode not supported or failed.");
+        }
     };
 
     return (
@@ -160,7 +167,17 @@ const Player = () => {
 
                 {/* Controls Bar */}
                 {!loading && sources.length > 0 && (
-                    <div className="flex justify-end mt-4">
+                    <div className="flex justify-end mt-4 gap-3">
+                        {/* PiP Button */}
+                        <button
+                            onClick={togglePiP}
+                            className="flex items-center justify-center bg-black/40 hover:bg-white/10 rounded-lg p-2 border border-white/10 text-white/70 hover:text-white transition-colors"
+                            title="Picture in Picture"
+                        >
+                            <PictureInPicture size={20} />
+                        </button>
+
+                        {/* Quality Selector */}
                         <div className="flex items-center gap-2 bg-black/40 rounded-lg p-1 px-3 border border-white/10">
                             <Settings size={16} className="text-white/70" />
                             <select 
