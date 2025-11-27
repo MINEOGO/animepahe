@@ -1,4 +1,4 @@
-import { Button } from "@nextui-org/react";
+import { Button, Chip } from "@nextui-org/react";
 import { Download } from 'lucide-react';
 import useAxios from '../hooks/useAxios';
 import { KWIK, ANIME } from '../config/config';
@@ -15,8 +15,18 @@ interface DownloadListItemProps {
 const DownloadListItem = ({ name, link, seriesTitle, episodeNumber }: DownloadListItemProps) => {
   const { isLoading, request } = useAxios()
 
+  // Parse Language Tag from Name (added by Worker)
+  // Example Name: "Crunchyroll 1080p (eng)"
+  let displayName = name;
+  let langTag = null;
+
+  const langMatch = name.match(/\((eng|jpn|dub|sub)\)/i);
+  if (langMatch) {
+    langTag = langMatch[1].toUpperCase();
+    displayName = name.replace(langMatch[0], '').trim();
+  }
+
   const onDownload = async (kwikUrl: string) => {
-    // 1. Bypass Kwik
     const response = await request<DirectLink>({
       server: KWIK,
       endpoint: `/?url=${encodeURIComponent(kwikUrl)}`,
@@ -24,12 +34,8 @@ const DownloadListItem = ({ name, link, seriesTitle, episodeNumber }: DownloadLi
     })
     
     if (response && response.success) {
-      // 2. Construct Custom Filename
-      // Format: Title_Ep_animepahe-26e.pages.dev_.mp4
       const safeTitle = seriesTitle.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
       const fileName = `${safeTitle}_${episodeNumber}_animepahe-26e.pages.dev_.mp4`;
-
-      // 3. Proxy Download
       const proxyDownloadUrl = `${ANIME}/proxy?proxyUrl=${encodeURIComponent(response.url)}&modify&download&filename=${encodeURIComponent(fileName)}`;
       
       const iframe = document.createElement('iframe');
@@ -46,16 +52,33 @@ const DownloadListItem = ({ name, link, seriesTitle, episodeNumber }: DownloadLi
   }
 
   return (
-    <div className='flex items-center rounded-lg w-full justify-between bg-gray-100 pl-2 shadow-sm'>
-      <span className='text-base text-gray-800'>{name}</span>
-      <div className='flex justify-center'>
+    <div className='glass-panel p-3 rounded-xl mb-3 flex items-center justify-between group transition-all duration-200 hover:bg-white/10 border border-white/10'>
+      
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <span className='text-sm sm:text-base text-white font-medium text-shadow'>
+            {displayName}
+        </span>
+        {langTag && (
+            <Chip 
+                size="sm" 
+                variant="flat" 
+                className={`text-xs font-bold border ${langTag === 'ENG' ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300' : 'bg-blue-500/20 border-blue-500/50 text-blue-300'}`}
+            >
+                {langTag}
+            </Chip>
+        )}
+      </div>
+
+      <div>
         <Button 
             onPress={() => onDownload(link)} 
-            color="success" 
-            className='text-white text-base rounded-none w-full'
+            className='bg-white/10 hover:bg-white/20 text-white font-semibold border border-white/20 shadow-lg backdrop-blur-md min-w-[120px]'
+            radius="full"
+            size="sm"
             isLoading={isLoading}
+            endContent={!isLoading && <Download size={16} />}
         >
-          Download <Download size={18} />
+          Download
         </Button>
       </div>
     </div>
